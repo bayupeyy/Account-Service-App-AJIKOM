@@ -62,12 +62,22 @@ func UpdateProfil(db *gorm.DB, userID int, profilBaru Users) error {
 		return err
 	}
 
-	//Menampung value update dari Input
-	user.Nama = profilBaru.Nama
-	user.HP = profilBaru.HP
-	user.Email = profilBaru.Email
-	user.Password = profilBaru.Password
-	user.Alamat = profilBaru.Alamat
+	// Update profil user dengan data baru jika tidak kosong
+	if profilBaru.Nama != "" { //Melakukan pengecekan apakah ada input kosong
+		user.Nama = profilBaru.Nama
+	}
+	if profilBaru.HP != "" {
+		user.HP = profilBaru.HP
+	}
+	if profilBaru.Email != "" {
+		user.Email = profilBaru.Email
+	}
+	if profilBaru.Password != "" {
+		user.Password = profilBaru.Password
+	}
+	if profilBaru.Alamat != "" {
+		user.Alamat = profilBaru.Alamat
+	}
 
 	//Menyimpan perubahan ke dalam DB
 	err = db.Save(&user).Error
