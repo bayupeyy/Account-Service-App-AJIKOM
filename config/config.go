@@ -19,6 +19,6 @@ func InitMysql() *gorm.DB {
 }
 
 func Migrate(connection *gorm.DB) error {
-	err := connection.AutoMigrate(&users.Users{}, &users.Barang{})
+	err := connection.AutoMigrate(&users.Users{}, &users.RiwayatTopUp{}, &users.RiwayatTransfer{})
 	return err
 }

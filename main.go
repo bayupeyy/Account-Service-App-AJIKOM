@@ -77,6 +77,63 @@ func main() {
 								fmt.Println("Profil berhasil diupdate")
 							}
 
+						} else if inputMenu == 3 {
+							var userID int
+							fmt.Println("Masukkan ID user yang ingin dihapus:")
+							fmt.Scanln(&userID)
+							err := users.DeleteUser(database, userID)
+							if err != nil {
+								fmt.Println("Gagal menghapus user:", err)
+							} else {
+								fmt.Println("User berhasil dihapus")
+							}
+						} else if inputMenu == 4 {
+							var amount float64
+							fmt.Println("Masukkan jumlah saldo yang ingin ditambahkan:")
+							fmt.Scanln(&amount)
+							err := users.TopUpSaldo(database, amount)
+							if err != nil {
+								fmt.Println("Gagal top-up saldo:", err)
+							} else {
+								fmt.Println("Top-up saldo berhasil")
+							}
+						} else if inputMenu == 5 {
+							var receiverHP int
+							var amount float64
+							fmt.Println("Transfer Saldo")
+							fmt.Println("Masukkan Nomor HP Penerima:")
+							fmt.Scanln(&receiverHP)
+							fmt.Println("Masukkan Jumlah Saldo yang Akan Ditransfer:")
+							fmt.Scanln(&amount)
+
+							success, err := users.TransferSaldo(database, loggedIn.ID, receiverHP, amount)
+							if err != nil {
+								fmt.Println("Gagal melakukan transfer saldo:", err)
+							} else if success {
+								fmt.Println("Transfer saldo berhasil!")
+							} else {
+								fmt.Println("Gagal melakukan transfer saldo. Saldo tidak mencukupi.")
+							}
+						} else if inputMenu == 6 {
+							history, err := users.GetTopUpHistory(database, loggedIn.ID)
+							if err != nil {
+								fmt.Println("Gagal mendapatkan Riwayat topup: ", err)
+							} else {
+								fmt.Println("=== Riwayat TopUp ===")
+								for _, h := range history {
+									fmt.Printf("%d. Rp.%.2f, Waktu Transaksi: %s\n", h.ID, h.Amount, h.Timestamp)
+								}
+							}
+						} else if inputMenu == 7 {
+							history, err := users.SemuaRiwayatTransfer(database, loggedIn.ID)
+							if err != nil {
+								fmt.Println("Gagal mendapatkan Riwayat Transfer: ", err)
+							} else {
+								fmt.Println("=== Riwayat Transfer ===")
+								for _, h := range history {
+									fmt.Printf("%d. Rp.%.2f, Penerima: %s, Waktu Transaksi: %s\n", h.ID, h.Amount, h.Penerima, h.Timestamp)
+								}
+							}
 						} else if inputMenu == 99 {
 							// Kembali ke Menu Utama
 							break

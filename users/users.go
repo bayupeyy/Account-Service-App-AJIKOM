@@ -2,6 +2,7 @@ package users
 
 import (
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -13,22 +14,30 @@ type Users struct {
 	Email    string
 	Password string
 	Alamat   string
-	Saldo    string
+	Saldo    float64
 }
 
-type Barang struct {
-	ID_Barang     int `gorm:"primaryKey"`
-	UserID        int
-	Nama_Barang   string
-	Harga         float64
-	Jumlah_barang int
+type RiwayatTopUp struct {
+	ID        int `gorm:"primaryKey"`
+	Amount    float64
+	Timestamp time.Time
+}
+
+type RiwayatTransfer struct {
+	ID        int `gorm:"primaryKey"`
+	Penerima  string
+	Amount    float64
+	Timestamp time.Time
 }
 
 func AutoMigrateTables(db *gorm.DB) error {
 	if err := db.AutoMigrate(&Users{}); err != nil {
 		return err
 	}
-	if err := db.AutoMigrate(&Barang{}); err != nil {
+	if err := db.AutoMigrate(&RiwayatTopUp{}); err != nil {
+		return err
+	}
+	if err := db.AutoMigrate(&RiwayatTransfer{}); err != nil {
 		return err
 	}
 	return nil
@@ -104,6 +113,127 @@ func MenampilkanProfilUser(db *gorm.DB, userID int) error {
 	fmt.Printf("Saldo: %.2f\n", user.Saldo)
 
 	return nil
+}
+
+// Fungsi Delete Users
+func DeleteUser(db *gorm.DB, userID int) error {
+	// Temukan user berdasarkan ID
+	var user Users
+	if err := db.First(&user, userID).Error; err != nil {
+		return err
+	}
+
+	// Hapus user dari database
+	if err := db.Delete(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// TopUpSaldo menambahkan saldo pengguna berdasarkan ID pengguna dan jumlah saldo yang ditambahkan
+func TopUpSaldo(db *gorm.DB, amount float64) error {
+	// Cari pengguna berdasarkan ID
+	var user Users
+	if err := db.First(&user).Error; err != nil {
+		return err
+	}
+
+	// Tambahkan saldo
+	user.Saldo += amount
+
+	// Simpan perubahan ke database
+	if err := db.Save(&user).Error; err != nil {
+		return err
+	}
+
+	// Simpan riwayat topup ke database
+	if err := SimpanRiwayatTopUp(db, amount); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Fungsi Transfer Saldo
+func TransferSaldo(db *gorm.DB, senderID, receiverHP int, amount float64) (bool, error) {
+	var sender Users
+	var receiver Users
+
+	// Mencari pengguna pengirim berdasarkan ID
+	if err := db.First(&sender, senderID).Error; err != nil {
+		return false, err
+	}
+
+	// Mencari pengguna penerima berdasarkan nomor HP
+	if err := db.Where("hp = ?", receiverHP).First(&receiver).Error; err != nil {
+		return false, err
+	}
+
+	// Memastikan saldo pengirim mencukupi untuk transfer
+	if sender.Saldo < amount {
+		return false, nil
+	}
+
+	// Melakukan pengurangan saldo dari pengirim
+	sender.Saldo -= amount
+	if err := db.Save(&sender).Error; err != nil {
+		return false, err
+	}
+
+	// Menambahkan saldo ke penerima
+	receiver.Saldo += amount
+	if err := db.Save(&receiver).Error; err != nil {
+		return false, err
+	}
+
+	// Simpan riwayat topup ke database
+	if err := SimpanRiwayatTransfer(db, receiver.Nama, amount); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+// Simpan Riwayat TopUp
+func SimpanRiwayatTopUp(db *gorm.DB, amount float64) error {
+	history := RiwayatTopUp{
+		Amount:    amount,
+		Timestamp: time.Now(),
+	}
+	if err := db.Create(&history).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetTopUpHistory(db *gorm.DB, ID int) ([]RiwayatTopUp, error) {
+	var history []RiwayatTopUp
+	if err := db.Find(&history).Error; err != nil {
+		return nil, err
+	}
+	return history, nil
+}
+
+// Simpan Riwayar Transfer
+func SimpanRiwayatTransfer(db *gorm.DB, penerima string, amount float64) error {
+	history := RiwayatTransfer{
+		Amount:    amount,
+		Penerima:  penerima,
+		Timestamp: time.Now(),
+	}
+	if err := db.Create(&history).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func SemuaRiwayatTransfer(db *gorm.DB, ID int) ([]RiwayatTransfer, error) {
+	var history []RiwayatTransfer
+	if err := db.Find(&history).Error; err != nil {
+		return nil, err
+	}
+	return history, nil
 }
 
 func Login(connection *gorm.DB, hp string, password string) (Users, error) {
