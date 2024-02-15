@@ -31,8 +31,7 @@ func main() {
 				loggedIn, err := users.Login(database, hp, password)
 				if err == nil {
 					fmt.Println("Selamat Datang,", loggedIn.Nama)
-
-					// Menu input barang
+					// Menu input
 					var inputMenu int
 					for inputMenu != 99 {
 						fmt.Println("Menu")
@@ -76,7 +75,46 @@ func main() {
 							} else {
 								fmt.Println("Profil berhasil diupdate")
 							}
+						} else if inputMenu == 3 {
+							var userID int
+							fmt.Println("Masukkan ID user yang ingin dihapus:")
+							fmt.Scanln(&userID)
+							err := users.DeleteUser(database, userID)
+							if err != nil {
+								fmt.Println("Gagal menghapus user:", err)
+							} else {
+								fmt.Println("User berhasil dihapus")
+							}
+						} else if inputMenu == 4 {
+							var userID int
+							var amount float64
+							fmt.Println("Masukkan ID user yang ingin di-top up:")
+							fmt.Scanln(&userID)
+							fmt.Println("Masukkan jumlah saldo yang ingin ditambahkan:")
+							fmt.Scanln(&amount)
+							err := users.TopUpSaldo(database, userID, amount)
+							if err != nil {
+								fmt.Println("Gagal top-up saldo:", err)
+							} else {
+								fmt.Println("Top-up saldo berhasil")
+							}
+						} else if inputMenu == 5 {
+							var receiverHP int
+							var amount float64
+							fmt.Println("Transfer Saldo")
+							fmt.Println("Masukkan Nomor HP Penerima:")
+							fmt.Scanln(&receiverHP)
+							fmt.Println("Masukkan Jumlah Saldo yang Akan Ditransfer:")
+							fmt.Scanln(&amount)
 
+							success, err := users.TransferSaldo(database, loggedIn.ID, receiverHP, amount)
+							if err != nil {
+								fmt.Println("Gagal melakukan transfer saldo:", err)
+							} else if success {
+								fmt.Println("Transfer saldo berhasil!")
+							} else {
+								fmt.Println("Gagal melakukan transfer saldo. Saldo tidak mencukupi.")
+							}
 						} else if inputMenu == 99 {
 							// Kembali ke Menu Utama
 							break
@@ -97,15 +135,15 @@ func main() {
 			// kalo sukses welcome, kalo gagal isi lagi
 		} else if input == 2 {
 			var newUser users.Users
-			fmt.Print("Masukkan nama ")
+			fmt.Print("Masukkan Nama: ")
 			fmt.Scanln(&newUser.Nama)
-			fmt.Print("Masukkan nomor HP ")
+			fmt.Print("Masukkan Nomor HP: ")
 			fmt.Scanln(&newUser.HP)
-			fmt.Print("Masukkan Email")
+			fmt.Print("Masukkan Email: ")
 			fmt.Scanln(&newUser.Email)
-			fmt.Print("Masukkan password ")
+			fmt.Print("Masukkan Password: ")
 			fmt.Scanln(&newUser.Password)
-			fmt.Print("Masukkan alamat ")
+			fmt.Print("Masukkan Alamat: ")
 			fmt.Scanln(&newUser.Alamat)
 			success, err := users.Register(database, newUser)
 			if err != nil {

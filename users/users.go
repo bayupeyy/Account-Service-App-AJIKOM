@@ -13,22 +13,11 @@ type Users struct {
 	Email    string
 	Password string
 	Alamat   string
-	Saldo    string
-}
-
-type Barang struct {
-	ID_Barang     int `gorm:"primaryKey"`
-	UserID        int
-	Nama_Barang   string
-	Harga         float64
-	Jumlah_barang int
+	Saldo    float64
 }
 
 func AutoMigrateTables(db *gorm.DB) error {
 	if err := db.AutoMigrate(&Users{}); err != nil {
-		return err
-	}
-	if err := db.AutoMigrate(&Barang{}); err != nil {
 		return err
 	}
 	return nil
@@ -104,6 +93,76 @@ func MenampilkanProfilUser(db *gorm.DB, userID int) error {
 	fmt.Printf("Saldo: %.2f\n", user.Saldo)
 
 	return nil
+}
+
+// Fungsi Delete Users
+func DeleteUser(db *gorm.DB, userID int) error {
+	// Temukan user berdasarkan ID
+	var user Users
+	if err := db.First(&user, userID).Error; err != nil {
+		return err
+	}
+
+	// Hapus user dari database
+	if err := db.Delete(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// TopUpSaldo menambahkan saldo pengguna berdasarkan ID pengguna dan jumlah saldo yang ditambahkan
+func TopUpSaldo(db *gorm.DB, userID int, amount float64) error {
+	// Cari pengguna berdasarkan ID
+	var user Users
+	if err := db.First(&user, userID).Error; err != nil {
+		return err
+	}
+
+	// Tambahkan saldo
+	user.Saldo += amount
+
+	// Simpan perubahan ke database
+	if err := db.Save(&user).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Fungsi Transfer Saldo
+func TransferSaldo(db *gorm.DB, senderID, receiverHP int, amount float64) (bool, error) {
+	var sender Users
+	var receiver Users
+
+	// Mencari pengguna pengirim berdasarkan ID
+	if err := db.First(&sender, senderID).Error; err != nil {
+		return false, err
+	}
+
+	// Mencari pengguna penerima berdasarkan nomor HP
+	if err := db.Where("hp = ?", receiverHP).First(&receiver).Error; err != nil {
+		return false, err
+	}
+
+	// Memastikan saldo pengirim mencukupi untuk transfer
+	if sender.Saldo < amount {
+		return false, nil
+	}
+
+	// Melakukan pengurangan saldo dari pengirim
+	sender.Saldo -= amount
+	if err := db.Save(&sender).Error; err != nil {
+		return false, err
+	}
+
+	// Menambahkan saldo ke penerima
+	receiver.Saldo += amount
+	if err := db.Save(&receiver).Error; err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func Login(connection *gorm.DB, hp string, password string) (Users, error) {
