@@ -15,7 +15,7 @@ func main() {
 		fmt.Println("Pilih menu")
 		fmt.Println("1. Login")
 		fmt.Println("2. Register")
-		fmt.Println("99. Exit")
+		fmt.Println("0. Exit")
 		fmt.Print("Masukkan pilihan:")
 		fmt.Scanln(&input)
 		if input == 1 {
@@ -44,7 +44,7 @@ func main() {
 						fmt.Println("6. History TopUp")
 						fmt.Println("7. History Transfer")
 						fmt.Println("8. Lihat Profil Lain")
-						fmt.Println("99. Kembali ke Menu Utama")
+						fmt.Println("0. Kembali ke Menu Utama")
 						fmt.Print("Masukkan Pilihan : ")
 						fmt.Scanln(&inputMenu)
 
@@ -78,10 +78,7 @@ func main() {
 							}
 
 						} else if inputMenu == 3 {
-							var userID int
-							fmt.Println("Masukkan ID user yang ingin dihapus:")
-							fmt.Scanln(&userID)
-							err := users.DeleteUser(database, userID)
+							err := users.DeleteUser(database, loggedIn.ID)
 							if err != nil {
 								fmt.Println("Gagal menghapus user:", err)
 							} else {
@@ -91,7 +88,7 @@ func main() {
 							var amount float64
 							fmt.Println("Masukkan jumlah saldo yang ingin ditambahkan:")
 							fmt.Scanln(&amount)
-							err := users.TopUpSaldo(database, amount)
+							err := users.TopUpSaldo(database, loggedIn.ID, amount)
 							if err != nil {
 								fmt.Println("Gagal top-up saldo:", err)
 							} else {
@@ -121,7 +118,7 @@ func main() {
 							} else {
 								fmt.Println("=== Riwayat TopUp ===")
 								for _, h := range history {
-									fmt.Printf("%d. Rp.%.2f, Waktu Transaksi: %s\n", h.ID, h.Amount, h.Timestamp)
+									fmt.Printf("Rp.%.2f, Waktu Transaksi: %s\n", h.Amount, h.Timestamp)
 								}
 							}
 						} else if inputMenu == 7 {
@@ -131,10 +128,18 @@ func main() {
 							} else {
 								fmt.Println("=== Riwayat Transfer ===")
 								for _, h := range history {
-									fmt.Printf("%d. Rp.%.2f, Penerima: %s, Waktu Transaksi: %s\n", h.ID, h.Amount, h.Penerima, h.Timestamp)
+									fmt.Printf("Rp.%.2f, Penerima: %s, Waktu Transaksi: %s\n", h.Amount, h.Penerima, h.Timestamp)
 								}
 							}
-						} else if inputMenu == 99 {
+						} else if inputMenu == 8 {
+							var userHP string
+							fmt.Println("Masukkan nomor HP pengguna lain:")
+							fmt.Scanln(&userHP)
+
+							if err := users.LihatProfilPenggunaByHP(database, userHP); err != nil {
+								fmt.Println("Gagal menampilkan profil pengguna:", err)
+							}
+						} else if inputMenu == 0 {
 							// Kembali ke Menu Utama
 							break
 						} else {

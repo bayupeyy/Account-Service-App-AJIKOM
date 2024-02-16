@@ -18,13 +18,13 @@ type Users struct {
 }
 
 type RiwayatTopUp struct {
-	ID        int `gorm:"primaryKey"`
+	UserID    int `gorm:"references:ID"`
 	Amount    float64
 	Timestamp time.Time
 }
 
 type RiwayatTransfer struct {
-	ID        int `gorm:"primaryKey"`
+	UserID    int `gorm:"references:ID"`
 	Penerima  string
 	Amount    float64
 	Timestamp time.Time
@@ -132,8 +132,8 @@ func DeleteUser(db *gorm.DB, userID int) error {
 }
 
 // TopUpSaldo menambahkan saldo pengguna berdasarkan ID pengguna dan jumlah saldo yang ditambahkan
-func TopUpSaldo(db *gorm.DB, amount float64) error {
-	// Cari pengguna berdasarkan ID
+func TopUpSaldo(db *gorm.DB, userID int, amount float64) error {
+
 	var user Users
 	if err := db.First(&user).Error; err != nil {
 		return err
@@ -148,15 +148,36 @@ func TopUpSaldo(db *gorm.DB, amount float64) error {
 	}
 
 	// Simpan riwayat topup ke database
-	if err := SimpanRiwayatTopUp(db, amount); err != nil {
+	if err := SimpanRiwayatTopUp(db, userID, amount); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+// Simpan Riwayat TopUp
+func SimpanRiwayatTopUp(db *gorm.DB, userID int, amount float64) error {
+	history := RiwayatTopUp{
+		UserID:    userID,
+		Amount:    amount,
+		Timestamp: time.Now(),
+	}
+	if err := db.Create(&history).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func GetTopUpHistory(db *gorm.DB, userID int) ([]RiwayatTopUp, error) {
+	var history []RiwayatTopUp
+	if err := db.Where("user_id = ?", userID).Find(&history).Error; err != nil {
+		return nil, err
+	}
+	return history, nil
+}
+
 // Fungsi Transfer Saldo
-func TransferSaldo(db *gorm.DB, senderID, receiverHP int, amount float64) (bool, error) {
+func TransferSaldo(db *gorm.DB, senderID int, receiverHP int, amount float64) (bool, error) {
 	var sender Users
 	var receiver Users
 
@@ -180,7 +201,6 @@ func TransferSaldo(db *gorm.DB, senderID, receiverHP int, amount float64) (bool,
 	if err := db.Save(&sender).Error; err != nil {
 		return false, err
 	}
-
 	// Menambahkan saldo ke penerima
 	receiver.Saldo += amount
 	if err := db.Save(&receiver).Error; err != nil {
@@ -188,36 +208,17 @@ func TransferSaldo(db *gorm.DB, senderID, receiverHP int, amount float64) (bool,
 	}
 
 	// Simpan riwayat topup ke database
-	if err := SimpanRiwayatTransfer(db, receiver.Nama, amount); err != nil {
+	if err := SimpanRiwayatTransfer(db, sender.ID, receiver.Nama, amount); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-// Simpan Riwayat TopUp
-func SimpanRiwayatTopUp(db *gorm.DB, amount float64) error {
-	history := RiwayatTopUp{
-		Amount:    amount,
-		Timestamp: time.Now(),
-	}
-	if err := db.Create(&history).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-func GetTopUpHistory(db *gorm.DB, ID int) ([]RiwayatTopUp, error) {
-	var history []RiwayatTopUp
-	if err := db.Find(&history).Error; err != nil {
-		return nil, err
-	}
-	return history, nil
-}
-
-// Simpan Riwayar Transfer
-func SimpanRiwayatTransfer(db *gorm.DB, penerima string, amount float64) error {
+// Simpan Riwayat Transfer
+func SimpanRiwayatTransfer(db *gorm.DB, userID int, penerima string, amount float64) error {
 	history := RiwayatTransfer{
+		UserID:    userID,
 		Amount:    amount,
 		Penerima:  penerima,
 		Timestamp: time.Now(),
@@ -228,14 +229,32 @@ func SimpanRiwayatTransfer(db *gorm.DB, penerima string, amount float64) error {
 	return nil
 }
 
-func SemuaRiwayatTransfer(db *gorm.DB, ID int) ([]RiwayatTransfer, error) {
+func SemuaRiwayatTransfer(db *gorm.DB, userID int) ([]RiwayatTransfer, error) {
 	var history []RiwayatTransfer
-	if err := db.Find(&history).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).Find(&history).Error; err != nil {
 		return nil, err
 	}
 	return history, nil
 }
 
+// Melihat User dengan No Hp
+func LihatProfilPenggunaByHP(db *gorm.DB, hp string) error {
+	var user Users
+	if err := db.Where("hp = ?", hp).First(&user).Error; err != nil {
+		return err
+	}
+
+	// Tampilkan profil pengguna
+	fmt.Println("=== Profil Pengguna ===")
+	fmt.Printf("Nama: %s\n", user.Nama)
+	fmt.Printf("Nomor HP: %s\n", user.HP)
+	fmt.Printf("Email: %s\n", user.Email)
+	fmt.Printf("Alamat: %s\n", user.Alamat)
+
+	return nil
+}
+
+// func LihatUser(db *gorm.DB)
 func Login(connection *gorm.DB, hp string, password string) (Users, error) {
 	var result Users
 	err := connection.Where("hp = ? AND password = ?", hp, password).First(&result).Error
