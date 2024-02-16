@@ -2,6 +2,8 @@ package users
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -61,6 +63,28 @@ func Register(connection *gorm.DB, newUser Users) (bool, error) {
 	return query.RowsAffected > 0, nil
 }
 
+// Fitur 1
+// Fungsi untuk menambahkan separator ribuan ke saldo
+func formatSaldo(saldo float64) string {
+	saldoStr := strconv.FormatFloat(saldo, 'f', 2, 64) //Mengonversi nilai float menjadi string
+	bagian := strings.Split(saldoStr, ".")             //Membagi string str menjadi potongan-potongan berdasarkan spasi
+
+	integerBagian := bagian[0]
+	thousandSeparated := ""
+	for i, digit := range integerBagian {
+		if i > 0 && (len(integerBagian)-i)%3 == 0 {
+			thousandSeparated += ","
+		}
+		thousandSeparated += string(digit)
+	}
+
+	if len(bagian) > 1 {
+		return "Rp " + thousandSeparated + "." + bagian[1]
+	}
+	return "Rp " + thousandSeparated
+}
+
+// Fitur 2
 // Fungsi untuk Menampilkan user profil
 func MenampilkanProfilUser(db *gorm.DB, userID int) error {
 	var user Users
@@ -68,23 +92,26 @@ func MenampilkanProfilUser(db *gorm.DB, userID int) error {
 		return err
 	}
 
+	formattedSaldo := formatSaldo(user.Saldo)
+
 	fmt.Println("=== Profil Pengguna ===")
 	fmt.Printf("ID: %d\n", user.ID)
 	fmt.Printf("Nama: %s\n", user.Nama)
 	fmt.Printf("Nomor HP: %s\n", user.HP)
 	fmt.Printf("Email: %s\n", user.Email)
 	fmt.Printf("Alamat: %s\n", user.Alamat)
-	fmt.Printf("Saldo: %.2f\n", user.Saldo)
+	fmt.Printf("Saldo: %s\n", formattedSaldo)
 
 	return nil
 }
 
+// Fitur 3
 // Fungsi untuk Update Profil
 func UpdateProfil(db *gorm.DB, userID int, profilBaru Users) error {
 	//Mencari user berdasarkan ID
 
-	var user Users //Membuat Variabel user dari Tbl Users
-	err := db.First(&user, userID).Error
+	var user Users                       //Membuat Variabel user dari Tbl Users
+	err := db.First(&user, userID).Error //Menampilkan data pertama dari DB
 	if err != nil {
 		return err
 	}
@@ -115,6 +142,7 @@ func UpdateProfil(db *gorm.DB, userID int, profilBaru Users) error {
 	return nil
 }
 
+// Fitur 4
 // Fungsi Delete Users
 func DeleteUser(db *gorm.DB, userID int) error {
 	// Temukan user berdasarkan ID
@@ -131,6 +159,7 @@ func DeleteUser(db *gorm.DB, userID int) error {
 	return nil
 }
 
+// Fitur 5
 // TopUpSaldo menambahkan saldo pengguna berdasarkan ID pengguna dan jumlah saldo yang ditambahkan
 func TopUpSaldo(db *gorm.DB, userID int, amount float64) error {
 
@@ -170,12 +199,13 @@ func SimpanRiwayatTopUp(db *gorm.DB, userID int, amount float64) error {
 
 func GetTopUpHistory(db *gorm.DB, userID int) ([]RiwayatTopUp, error) {
 	var history []RiwayatTopUp
-	if err := db.Where("user_id = ?", userID).Find(&history).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).Find(&history).Error; err != nil { // Find Untuk menentukan kondisi pencarian
 		return nil, err
 	}
 	return history, nil
 }
 
+// Fitur 6
 // Fungsi Transfer Saldo
 func TransferSaldo(db *gorm.DB, senderID int, receiverHP int, amount float64) (bool, error) {
 	var sender Users
@@ -215,6 +245,7 @@ func TransferSaldo(db *gorm.DB, senderID int, receiverHP int, amount float64) (b
 	return true, nil
 }
 
+// Fitur 7
 // Simpan Riwayat Transfer
 func SimpanRiwayatTransfer(db *gorm.DB, userID int, penerima string, amount float64) error {
 	history := RiwayatTransfer{
@@ -223,7 +254,7 @@ func SimpanRiwayatTransfer(db *gorm.DB, userID int, penerima string, amount floa
 		Penerima:  penerima,
 		Timestamp: time.Now(),
 	}
-	if err := db.Create(&history).Error; err != nil {
+	if err := db.Create(&history).Error; err != nil { //Membuat record baru
 		return err
 	}
 	return nil
@@ -231,12 +262,13 @@ func SimpanRiwayatTransfer(db *gorm.DB, userID int, penerima string, amount floa
 
 func SemuaRiwayatTransfer(db *gorm.DB, userID int) ([]RiwayatTransfer, error) {
 	var history []RiwayatTransfer
-	if err := db.Where("user_id = ?", userID).Find(&history).Error; err != nil {
+	if err := db.Where("user_id = ?", userID).Find(&history).Error; err != nil { //Menemukan Record
 		return nil, err
 	}
 	return history, nil
 }
 
+// Fitur 8
 // Melihat User dengan No Hp
 func LihatProfilPenggunaByHP(db *gorm.DB, hp string) error {
 	var user Users
