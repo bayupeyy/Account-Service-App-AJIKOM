@@ -61,6 +61,24 @@ func Register(connection *gorm.DB, newUser Users) (bool, error) {
 	return query.RowsAffected > 0, nil
 }
 
+// Fungsi untuk Menampilkan user profil
+func MenampilkanProfilUser(db *gorm.DB, userID int) error {
+	var user Users
+	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
+		return err
+	}
+
+	fmt.Println("=== Profil Pengguna ===")
+	fmt.Printf("ID: %d\n", user.ID)
+	fmt.Printf("Nama: %s\n", user.Nama)
+	fmt.Printf("Nomor HP: %s\n", user.HP)
+	fmt.Printf("Email: %s\n", user.Email)
+	fmt.Printf("Alamat: %s\n", user.Alamat)
+	fmt.Printf("Saldo: %.2f\n", user.Saldo)
+
+	return nil
+}
+
 // Fungsi untuk Update Profil
 func UpdateProfil(db *gorm.DB, userID int, profilBaru Users) error {
 	//Mencari user berdasarkan ID
@@ -93,24 +111,6 @@ func UpdateProfil(db *gorm.DB, userID int, profilBaru Users) error {
 	if err != nil {
 		return err
 	}
-
-	return nil
-}
-
-// Fungsi untuk Menampilkan user profil
-func MenampilkanProfilUser(db *gorm.DB, userID int) error {
-	var user Users
-	if err := db.Where("id = ?", userID).First(&user).Error; err != nil {
-		return err
-	}
-
-	fmt.Println("=== Profil Pengguna ===")
-	fmt.Printf("ID: %d\n", user.ID)
-	fmt.Printf("Nama: %s\n", user.Nama)
-	fmt.Printf("Nomor HP: %s\n", user.HP)
-	fmt.Printf("Email: %s\n", user.Email)
-	fmt.Printf("Alamat: %s\n", user.Alamat)
-	fmt.Printf("Saldo: %.2f\n", user.Saldo)
 
 	return nil
 }
